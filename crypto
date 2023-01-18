@@ -1,0 +1,36 @@
+import numpy as np
+import pandas as pd
+import datetime
+from pycoingecko import CoinGeckoAPI
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.graph_objects as go
+import mplfinance.original_flavor as candlestack2_ohlc
+
+
+s = CoinGeckoAPI()
+
+crypto_currency = input('Enter crypto: ').lower()
+currency = input('Enter currency: ').lower()
+days = int(input('Enter days: '))
+
+data = s.get_coin_market_chart_by_id(id=crypto_currency, vs_currency=currency, days=days)
+
+crypto_data = data['prices']
+crypto = pd.DataFrame(crypto_data, columns=['TimeStamp', 'Price'])
+
+crypto['Date'] = crypto['TimeStamp'].apply(lambda d: datetime.date.fromtimestamp(d/1000))
+print(crypto['Date'])
+
+crypto_stack_data = crypto.groupby(crypto.Date, as_index=False).agg({'Price': ['min', 'max', 'first', 'last']})
+#print(crypto_stack_data)
+
+
+fig = go.Figure(data=[go.Candlestick(x=crypto_stack_data['Date'],
+                                     open=crypto_stack_data['Price']['first'],
+                                     high=crypto_stack_data['Price']['max'],
+                                     low=crypto_stack_data['Price']['min'],
+                                     close=crypto_stack_data['Price']['last'])])
+
+fig.update_layout(xaxis_rangeslider_visible=False)
+fig.show()
